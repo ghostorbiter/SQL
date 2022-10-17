@@ -1,0 +1,142 @@
+package demoProject; // project name
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.Statement;
+import java.sql.*;
+
+import java.time.LocalDate;
+
+import java.util.Scanner;
+import java.util.concurrent.ThreadLocalRandom;
+
+public class ConnectionTester {
+    public ConnectionTester() {}
+    
+    public static void print(ResultSet rs) throws SQLException {
+            ResultSetMetaData res = rs.getMetaData();
+            int cols = res.getColumnCount();
+
+            for (int i = 1; i <= cols; i++) {
+                System.out.print(res.getColumnName(i) + "\t");
+            }
+            System.out.println();
+
+            while (rs.next()) {
+                for (int i = 1; i <= cols; i++) {
+                    System.out.print(rs.getString(i) + "\t");
+                }
+                System.out.println();
+            }
+        }
+    
+    private static void printTable(Connection con) throws SQLException {
+         print(
+             con.createStatement().executeQuery(String.format(
+                 "select * from %s;"
+         , "BANK_ACCOUNT"))
+                        );
+     }
+    
+   private static void Q4_1(Connection con) throws SQLException
+   {
+          for (int i = 0, index = 10; i < 5; ++i) {
+              con.prepareStatement(String.format(
+                  "insert into %1$s values (%2$d, '2020-05-23', 1, 1, 100)"
+              , "BANK_ACCOUNT", index + i)).executeUpdate();
+          }
+
+       printTable(con);
+   }
+   
+   private static void Q4_2(Connection con) throws SQLException
+   {
+       ResultSet rs = con.createStatement().executeQuery(String.format(
+                   "select MAX(BALANCE) from BANK_ACCOUNT"));
+               int maxBal = -1;
+               if (rs.next()) {
+                    maxBal = rs.getInt(1);
+               }
+               
+               rs = con.createStatement().executeQuery(String.format(
+                   "select MIN(BALANCE) from BANK_ACCOUNT"));
+               int minBal = -1;
+               if (rs.next()) {
+                    minBal = rs.getInt(1);
+               }
+               
+               con.prepareStatement(String.format(
+                       "update top(1) BANK_ACCOUNT set BALANCE = %1$d\n" +
+                       "where BALANCE in\n" +
+                       "(select MAX(BALANCE) from BANK_ACCOUNT)"
+               , minBal)).executeUpdate();
+               
+               con.prepareStatement(String.format(
+                       "update top(1) BANK_ACCOUNT set BALANCE = %1$d\n" +
+                       "where BALANCE in\n" +
+                       "(select MIN(BALANCE) from BANK_ACCOUNT)"
+               , maxBal)).executeUpdate();   
+               
+
+       printTable(con);
+   }
+   
+    public static void main(String[] args) {
+        String connection =
+                        "jdbc:sqlserver://127.0.0.1:1433;"
+                                + "DatabaseName=NorthWind;"
+                                + "user=sa;"
+                                + "password=SAstudent1;";
+        
+        String q1 = "DELETE top(1) FROM BANK_ACCOUNT WHERE BALANCE IN (select min(BALANCE) from BANK_ACCOUNT)\n" + 
+                    "DELETE top(1) FROM BANK_ACCOUNT WHERE BALANCE IN (select min(BALANCE) from BANK_ACCOUNT)";
+        
+        String q2_1 = "insert into BANK_ACCOUNT values (6, '05-23-2022', 1, 0.05, 100)";
+        String q2_2 = "insert into BANK_ACCOUNT values (7, '06-12-1999', 1, 0.05, 10)";
+        String q2_3 = "insert into BANK_ACCOUNT values (8, '12-20-2015', 1, 0.05, 15)";
+        
+        String q3_1 = "update BANK_ACCOUNT set INTEREST_RATE = INTEREST_RATE*2";
+        String q3_2 = "insert into BANK_ACCOUNT values (9,'12-20-2020',5,0.07,1000000)";
+        
+        
+        try {
+                    Connection con = DriverManager.getConnection(connection);
+
+                    PreparedStatement prepStat;
+                    prepStat = con.prepareStatement(q1);
+                    prepStat.executeUpdate();
+                    printTable(con);
+            
+                    prepStat = con.prepareStatement(q2_1);
+                    prepStat.executeUpdate();
+                    printTable(con);
+            
+                    prepStat = con.prepareStatement(q2_2);
+                    prepStat.executeUpdate();
+                    printTable(con);
+            
+                    prepStat = con.prepareStatement(q2_3);
+                    prepStat.executeUpdate();
+                    printTable(con);
+            
+                    prepStat = con.prepareStatement(q3_1);
+                    prepStat.executeUpdate();
+                    printTable(con);
+            
+                    prepStat = con.prepareStatement(q3_2);
+                    prepStat.executeUpdate();
+                    printTable(con);
+            
+                    Q4_1(con);
+                    Q4_2(con);
+            
+                    prepStat.close();
+                    con.commit();
+
+                }
+                catch (SQLException e) {
+                    e.printStackTrace();
+                }
+    }
+}

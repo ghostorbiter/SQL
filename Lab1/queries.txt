@@ -1,0 +1,42 @@
+--QUERY 1--
+
+select CustomerName, first_quater_1997, last_quater_1996
+from (
+  select max(c.ContactName) CustomerName,
+  sum(case when (year(OrderDate) = 1996 and month(OrderDate) > 8) then od.Quantity else 0 end) first_quater_1997,
+  sum(case when (year(OrderDate) = 1997 and month(OrderDate) < 4) then od.Quantity else 0 end) last_quater_1996
+  from [Order Details] od
+  join Orders o on od.OrderID = o.OrderID
+  join Customers c on o.CustomerID = c.CustomerID
+  group by c.CustomerID
+) tmp
+where first_quater_1997 > last_quater_1996
+
+--QUERY 2--
+
+select e.FirstName, e.LastName
+from Employees e
+join Orders o on e.EmployeeID = o.EmployeeID
+join [Order Details] od on o.OrderID = od.OrderID
+join Products p on od.ProductID = p.ProductID
+where od.Quantity >= 2 and (p.ProductName like 'S%' or p.ProductName like 'QU%')
+group by e.FirstName, e.LastName
+
+--QUERY 3--
+
+select o.ShipCountry, sum(od.Quantity) as OrderNumbers
+from Orders o
+join [Order Details] od on o.OrderID = od.OrderID
+group by o.ShipCountry
+order by OrderNumbers 
+
+--QUERY 5--
+
+select e.FirstName, e.LastName
+from Employees e
+join Orders o on e.EmployeeID = o.EmployeeID
+join [Order Details] od on o.OrderID = od.OrderID
+join Products p on od.ProductID = p.ProductID
+where p.ProductName = 'Boston Crab Meat'
+group by e.FirstName, e.LastName
+having sum(od.Quantity) > avg(od.Quantity)
